@@ -1,0 +1,73 @@
+#include <SFML/Graphics.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+using namespace sf;
+
+// Tirage d'un mot aléatoire dans le fichier texte
+
+string m = "hello";
+
+// Création d'une grille (6;size(mot))
+
+void drawGrid(RenderWindow& window) {
+	vector<RectangleShape> lines;
+
+	// Lignes horizontales
+	lines.push_back(RectangleShape(Vector2f(300, 3)));
+	lines.push_back(RectangleShape(Vector2f(300, 3)));
+	lines.push_back(RectangleShape(Vector2f(300, 3)));
+	lines.push_back(RectangleShape(Vector2f(300, 3)));
+	lines.push_back(RectangleShape(Vector2f(300, 3)));
+
+	// Lignes verticales
+	for (int j = 1; j < m.size(); j++)
+		lines.push_back(RectangleShape(Vector2f(3, 300)));
+
+	// Positionnement des lignes
+
+	lines[0].setPosition(0, 50);
+	lines[1].setPosition(0, 100);
+	lines[2].setPosition(0, 150);
+	lines[3].setPosition(0, 200);
+	lines[4].setPosition(0, 250);
+
+	int x,y = 0;
+
+	for (int j = 1; j < m.size(); j++)
+	{
+		x = 4 + j;
+		y = j * (300 / (m.size()));
+		lines[x].setPosition(y, 0);
+	}
+
+	// Lignes de couleurs noires
+	for (size_t i = 0; i < lines.size(); i++)
+		lines[i].setFillColor(Color::White);
+
+	// Affichage
+	for (size_t i = 0; i < lines.size(); i++)
+		window.draw(lines[i]);
+}
+
+// Initialiser historique
+
+// Essai d'un mot (affichage lettres, entrer, erreur si pas dans le dico)
+
+// Check de l'essai (boucle for tout le long du mot, affichage couleurs, griser lettres pas dedans ?)
+
+// Dans le int : jeu while (historique.size()<6 && not(win))
+
+int main() {
+
+	RenderWindow window(VideoMode(300, 300), "Motus");
+	while (window.isOpen())
+	{
+		window.clear(Color::Black);
+		drawGrid(window);
+		window.display();
+	}
+	return 0;
+}
