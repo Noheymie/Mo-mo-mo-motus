@@ -6,10 +6,6 @@
 using namespace std;
 using namespace sf;
 
-// Tirage d'un mot aléatoire dans le fichier texte
-
-string mref = "hello";
-
 // Création d'une grille (6;size(mot))
 
 void drawGrid(RenderWindow& window) {
@@ -45,22 +41,19 @@ void drawGrid(RenderWindow& window) {
 
 	// Lignes de couleurs noires
 	for (size_t i = 0; i < lines.size(); i++)
-		lines[i].setFillColor(Color::White);
+		lines[i].setFillColor(Color::Black);
 
 	// Affichage
 	for (size_t i = 0; i < lines.size(); i++)
 		window.draw(lines[i]);
 }
 
-// Essai d'un mot (affichage lettres, entrer, erreur si pas dans le dico)
-
-// Check de l'essai (boucle for tout le long du mot, affichage couleurs, griser lettres pas dedans ?)
-
-// Dans le int : jeu while (historique.size()<6 && not(win))
 
 int main() {
 
-	//mref=randomword()
+	//Mot mref; mref.random();
+
+	string mref = "hello";
 
 	// Initialisation de la grille
 
@@ -70,12 +63,36 @@ int main() {
 
 	while (window.isOpen())
 	{
-		window.clear(Color::Black);
+		window.clear(Color::White);
 		drawGrid(window);
 		window.display();
 
-		// afficher les lettres tapées petit à petit (window.display()) + constituer un mot m de taille mref.size() 
-		// m.comp(mref) -> comparaison lettre à lettre avec mref
+		//for i de 0 à 5 ?
+		
+		Event event;
+		//Mot m;
+
+		while (window.pollEvent(event))
+		{
+			switch (event.type)
+			{
+			case Event::KeyPressed:
+				if (event.key.code == event.key.shift) {
+					// if m.size == mref.size : if m.existe() alors m.compare(mref)
+					// else message "Entrer mot de mref.size ?
+				}
+				else {
+					int a = event.key.code;
+					//afficher a dans la grille
+					//ajoute la lettre au mot m
+				}
+				break;
+			default:
+				break;
+			}
+		}
+
+		// si m est dans dico : m.comp(mref) -> comparaison lettre à lettre avec mref et stockage de m dans h
 		// affichage couleurs -> window.display()
 		// if m=mref or h.size()=6 -> stop 
 	}
