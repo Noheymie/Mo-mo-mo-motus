@@ -8,7 +8,7 @@ using namespace sf;
 
 // Tirage d'un mot aléatoire dans le fichier texte
 
-string m = "hello";
+string mref = "hello";
 
 // Création d'une grille (6;size(mot))
 
@@ -23,7 +23,7 @@ void drawGrid(RenderWindow& window) {
 	lines.push_back(RectangleShape(Vector2f(300, 3)));
 
 	// Lignes verticales
-	for (int j = 1; j < m.size(); j++)
+	for (int j = 1; j < mref.size(); j++)
 		lines.push_back(RectangleShape(Vector2f(3, 300)));
 
 	// Positionnement des lignes
@@ -36,10 +36,10 @@ void drawGrid(RenderWindow& window) {
 
 	int x,y = 0;
 
-	for (int j = 1; j < m.size(); j++)
+	for (int j = 1; j < mref.size(); j++)
 	{
 		x = 4 + j;
-		y = j * (300 / (m.size()));
+		y = j * (300 / (mref.size()));
 		lines[x].setPosition(y, 0);
 	}
 
@@ -52,8 +52,6 @@ void drawGrid(RenderWindow& window) {
 		window.draw(lines[i]);
 }
 
-// Initialiser historique
-
 // Essai d'un mot (affichage lettres, entrer, erreur si pas dans le dico)
 
 // Check de l'essai (boucle for tout le long du mot, affichage couleurs, griser lettres pas dedans ?)
@@ -62,12 +60,24 @@ void drawGrid(RenderWindow& window) {
 
 int main() {
 
+	//mref=randomword()
+
+	// Initialisation de la grille
+
 	RenderWindow window(VideoMode(300, 300), "Motus");
+
+	// Historique h; 
+
 	while (window.isOpen())
 	{
 		window.clear(Color::Black);
 		drawGrid(window);
 		window.display();
+
+		// afficher les lettres tapées petit à petit (window.display()) + constituer un mot m de taille mref.size() 
+		// m.comp(mref) -> comparaison lettre à lettre avec mref
+		// affichage couleurs -> window.display()
+		// if m=mref or h.size()=6 -> stop 
 	}
 	return 0;
 }
