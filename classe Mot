@@ -1,1 +1,111 @@
+mot.h
 
+#pragma once
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <vector>
+#include <SFML/Graphics.hpp>
+
+using namespace std;
+using namespace sf;
+// Classe crée par CRETIER Quentin
+
+class Mot {
+	string mot_;
+	int taille_;
+public :
+	Mot();// fait
+	void saisirMot(); // fait
+	void motAuHasard();
+	int getTailleMot() const { return taille_; };
+	string getMot() const { return mot_; };
+	char& operator[](int i); // fait
+	bool comparaison(Mot& motTire); // fait
+	vector<int>& indicesComparaison(Mot& mot); // fait
+	// void drawForme(RenderWindow& win); // A faire après l'interface graphique
+	bool verifierMot(); // Vérifie si le mot est dans le fichier txt
+	//~Mot() ?
+};
+
+mot.ccp
+
+// Méthodes de la classe Mot
+
+#include "mot.h"
+
+Mot::Mot() {
+}
+
+void Mot::saisirMot() {
+	cout << "Quel est votre mot ? " << endl;
+	getline(cin, mot_);
+	taille_ = mot_.size();
+}
+
+char& Mot::operator[](int i) {
+	if (i<0 || i>taille_) {
+		cerr << "Dépassement d'indice" << endl;
+		abort();
+	}
+	return mot_[i];
+}
+
+bool Mot::comparaison(Mot& motTire) {
+	if (taille_ != motTire.taille_) {
+		return false;
+	}
+	else {
+		for (int i = 0; i < taille_; i++) {
+			if (mot_[i] != motTire.mot_[i]) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+vector<int>& Mot::indicesComparaison(Mot& mot) { // Il faudra supposer que les 2 mots aient la même taille
+	vector<int> list;
+	for (int i = 0; i < taille_; i++) {
+		if (mot_[i] == mot.mot_[i]) {
+			list.push_back(i);
+		}
+	}
+	return list;
+}
+
+void Mot::motAuHasard() {
+	srand(time(NULL));
+	ifstream myFile;
+	myFile.open("liste_finale.txt");
+	int a = rand();
+	while (a > 32579) {
+		a = rand();
+	}
+	int i = 0;
+	if (myFile.is_open()) {
+		while (i < a) {
+			getline(myFile, mot_);
+			// cout << mot_ << endl;
+			i = i + 1;
+		}
+	}
+	taille_ = mot_.size();
+	myFile.close();
+}
+
+bool Mot::verifierMot() {
+	srand(time(NULL));
+	ifstream myFile;
+	myFile.open("liste_finale.txt");
+	string line;
+	while (!myFile.eof()) {
+		getline(myFile, line);
+		if (line == mot_) {
+			return true;
+		}
+	}
+	return false;
+
+}
