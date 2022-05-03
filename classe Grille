@@ -1,0 +1,38 @@
+grille.h
+
+#pragma once
+#include "mot.h"
+
+using namespace std;
+using namespace sf;
+// Classe crée par CRETIER Quentin
+
+class Grille {
+	vector<Mot*> grille_;
+	int longueurGrille_;
+public :
+	Grille(); //Constructeur
+	int getTaille() const { return longueurGrille_; }; // Donne la taille de l'historique
+	void afficherGrille(); // affiche l'historique sur la console
+	void ajouterMot(Mot& mot); // ajoute un Mot à l'historique
+	// void implementerGrille(); // implémente l'historique dans un fichier texte
+};
+
+grille.ccp
+
+#include "grille.h"
+
+Grille::Grille() {
+}
+
+void Grille::afficherGrille() {
+	for (int i = 0; i < getTaille(); i++) {
+		cout << grille_[i]->getMot() << endl;
+		cout << grille_[i]->getTailleMot() << endl;
+	}
+}
+
+void Grille::ajouterMot(Mot& mot) {
+	grille_.push_back(&mot);
+	longueurGrille_ = grille_.size();
+}
