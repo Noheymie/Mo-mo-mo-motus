@@ -1,0 +1,120 @@
+%% Fichier touche.h %%
+
+#pragma once
+#include <SFML/Graphics.hpp>
+#include <iostream>
+
+using namespace std;
+using namespace sf;
+
+class Touche {
+	const char* caractere_;
+public :
+	Touche(const char* caractere);
+	char getTouche() const { return *caractere_; };
+	void TouchePresse(Event event, RenderWindow& fenetre);
+};
+
+%% Fichier touche.cpp %%
+
+#include "touche.h"
+
+Touche::Touche(const char* caractere) {
+	caractere_ = caractere;
+}
+
+void Touche::TouchePresse(Event event, RenderWindow& fenetre) {
+	if (event.type == Event::Closed) { // Ferme la fenêtre si l'on clique sur la croix
+		fenetre.close(); //Ferme la fenêtre
+	}
+	// Gestion des touches (appuyés)
+	if (event.type == Event::KeyPressed) {
+		switch (event.key.code) { // Code de la touche utilisée
+		case Keyboard::A:
+			caractere_ = "A";
+			break;
+		case Keyboard::Z:
+			caractere_ = "Z";
+			break;
+		case Keyboard::E:
+			caractere_ = "E";
+			break;
+		case Keyboard::R:
+			caractere_ = "R";
+			break;
+		case Keyboard::T:
+			caractere_ = "T";
+			break;
+		case Keyboard::Y:
+			caractere_ = "Y";
+			break;
+		case Keyboard::U:
+			caractere_ = "U";
+			break;
+		case Keyboard::I:
+			caractere_ = "I";
+			break;
+		case Keyboard::O:
+			caractere_ = "O";
+			break;
+		case Keyboard::P:
+			caractere_ = "P";
+			break;
+		case Keyboard::Q:
+			caractere_ = "Q";
+			break;
+		case Keyboard::S:
+			caractere_ = "S";
+			break;
+		case Keyboard::D:
+			caractere_ = "D";
+			break;
+		case Keyboard::F:
+			caractere_ = "F";
+			break;
+		case Keyboard::G:
+			caractere_ = "G";
+			break;
+		case Keyboard::H:
+			caractere_ = "H";
+			break;
+		case Keyboard::J:
+			caractere_ = "J";
+			break;
+		case Keyboard::K:
+			caractere_ = "K";
+			break;
+		case Keyboard::L:
+			caractere_ = "L";
+			break;
+		case Keyboard::M:
+			caractere_ = "M";
+			break;
+		case Keyboard::W:
+			caractere_ = "W";
+			break;
+		case Keyboard::X:
+			caractere_ = "X";
+			break;
+		case Keyboard::C:
+			caractere_ = "C";
+			break;
+		case Keyboard::V:
+			caractere_ = "V";
+			break;
+		case Keyboard::B:
+			caractere_ = "B";
+			break;
+		case Keyboard::N:
+			caractere_ = "N";
+			break;
+		case Keyboard::BackSpace:
+			// A voir pour le bouton effacer
+		case Keyboard::Escape:
+			fenetre.close();
+		default:
+			break;
+		}
+
+	}
+}
