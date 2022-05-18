@@ -1,0 +1,41 @@
+%% Fichier historique.h %%
+
+#pragma once
+#include "grille.h"
+#include <ctime>
+
+using namespace std;
+
+class Historique {
+	FILE* histo_;
+public :
+	Historique();
+	void ajouterGrille(Grille& grille);
+	// void afficherHistorique();
+};
+
+%% Fichier historique.cpp %%
+#include "historique.h"
+
+Historique::Historique() {
+}
+
+void Historique::ajouterGrille(Grille& grille) {
+	time_t tm = time(0);
+	errno_t his;
+	his = fopen_s(&histo_,"historiqueMotus.txt", "a");
+	// ajouter un test pour savoir si le fichier s'ouvre sans problème ou non
+	if (histo_!=NULL) {
+		int n = grille.getTaille();
+		fputs("\n", histo_);
+		// fputs("/// Partie du ", histo_); Faire une fonction rajoutant la date pour mieux y voir dans l'historique
+		for (int i = 0; i < n; i++) {
+			fputs(grille.listeMots()[i].c_str(), histo_);
+			fputs("\n", histo_);
+		}
+		fputs("\n", histo_);
+		fputs("------------------------------------------------------\n", histo_);
+		fclose(histo_);
+	}
+}
+
