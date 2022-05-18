@@ -1,0 +1,75 @@
+%% Fichier interfaceGraphique.h %%
+
+#pragma once
+#include "touche.h"
+#include <vector>
+
+class Interfacegraphique {
+	int tailleGrille_;
+public :
+	Interfacegraphique(int tailleGrille);
+	void setTailleGrille(int i) { tailleGrille_ = i; };
+	void drawGrille(int largeurFenetre, int hauteurfenetre,RenderWindow &window);
+	void drawLettre(Event event, RenderWindow &window);
+	// void changeColor(); A voir ce qu'il faut faire
+	void effacerLettre(int i, int j);
+};
+
+%% Fichier interfaceGraphique.cpp
+
+#include "interfacegraphique.h"
+
+Interfacegraphique::Interfacegraphique(int tailleGrille) {
+	tailleGrille_ = tailleGrille;
+}
+
+void Interfacegraphique::drawGrille(int largeurFenetre, int hauteurFenetre,RenderWindow &window ) {
+	vector<RectangleShape> lines_horizontales;
+	vector<RectangleShape> lines_verticales;
+
+	// Lignes verticales
+	for (int i = 0; i < 5; i++) {
+		lines_verticales.push_back(RectangleShape(Vector2f(6, 300)));
+	}
+	// Lignes horizontales
+	for (int i = 0; i < tailleGrille_; i++) {
+		lines_horizontales.push_back(RectangleShape(Vector2f(300, 6)));
+	}
+	// Il faut 5 lignes horizontales et tailleGrille_ - 1 lignes verticales
+
+	// Positionnement des lignes (on suppose ici que la fenêtre est adaptative)
+	double positionVerti = largeurFenetre / (tailleGrille_ - 1);
+	for (int i = 0; i < tailleGrille_ - 1; i++) {
+		lines_verticales[i].setPosition((i + 1) * positionVerti - 3, 0);
+	}
+	double positionHorizontal = hauteurFenetre / 5;
+	for (int i = 0; i < 5; i++) {
+		lines_horizontales[i].setPosition(0, (i + 1) * positionHorizontal - 3);
+	}
+
+	// Lignes de couleurs noires
+	for (size_t i = 0; i < lines_horizontales.size(); i++)
+		lines_horizontales[i].setFillColor(Color::Black);
+	for (size_t i = 0; i < lines_verticales.size(); i++)
+		lines_verticales[i].setFillColor(Color::Black);
+
+	// Affichage des lignes
+	for (size_t i = 0; i < lines_horizontales.size(); i++)
+		window.draw(lines_horizontales[i]);
+	for (size_t i = 0; i < lines_verticales.size(); i++)
+		window.draw(lines_verticales[i]);
+}
+
+void Interfacegraphique::drawLettre(Event event, RenderWindow &window) {
+	Touche touche(" ");
+	touche.TouchePresse(event, window);
+	/*
+	string text(touche.getTouche(), MyFont, 50);
+	string text = touche.getTouche(); // Revoir la conversion char en string
+	// string text(string à afficher, la police d'écriture, taille de la police d'écriture);
+	text.setColor(Color::Black);
+	text.setPosition();
+	*/
+	// A finir
+  
+  
