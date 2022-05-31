@@ -1,0 +1,935 @@
+/// main ///
+#include "Jeu.h"
+
+// Prototype des fonctions
+void afficherMot(Event &event,RenderWindow &window);
+
+int main() {
+	Jeu game;
+	game.play();
+	return 0;
+}
+
+/// Jeu.cpp ///
+#include "Jeu.h"
+
+Jeu::Jeu() {
+}
+
+void Jeu::play() {
+	Text txt;
+	Font font;
+	ofstream flux;
+	flux.open("historiqueFinal.txt", ios::app);
+	ifstream fluxIn;
+	fluxIn.open("historiqueFinal.txt");
+	ofstream fluxComplet;
+	fluxComplet.open("historiqueEntier.txt", ios::app);
+	LoadFont(font);
+	int largeurFenetre_ = 800;
+	int hauteurFenetre_ = 800;
+	int hauteurGrille_ = 600;
+	float positionxAlphabet = 150;
+	float positionyAlphabet = hauteurGrille_ + 10;
+	RenderWindow app(VideoMode(largeurFenetre_, hauteurFenetre_, 32), "Motus by CRETIER Quentin & GERARD Noémie");
+	Alphabet alphabet;
+	Mot motAdeviner;
+	motAdeviner.motAuHasard();
+	Grille listeMots;
+	Historique historique;
+	cout << motAdeviner.getMot() << endl;
+	Interfacegraphique grille;
+	grille.setTailleGrille(motAdeviner.getTailleMot());
+	int nbEssais = 0;
+	bool juste = false;
+	bool affichageGrille = true;
+	bool memeTaille = false;
+	bool estDansLeDico = false;
+	vector<Mot> motsArentrer;
+	while (app.isOpen()) {
+		Event event;
+		while (app.pollEvent(event)) {
+			if (event.type == Event::Closed) {
+				app.close();
+			}
+			if ((event.type == Event::KeyPressed) && (event.key.code == Keyboard::Escape)) {
+				app.close();
+			}
+		}
+		app.clear(Color::Black);
+		if (affichageGrille) {
+			initialiser(app, font, grille, alphabet, largeurFenetre_, hauteurGrille_, positionxAlphabet, positionyAlphabet);
+		}
+		if ((juste != true) && (nbEssais < 6)) {
+			Mot motUser;
+			do {
+				motUser.saisirMot();
+				memeTaille = motUser.memeTaille(motAdeviner);
+				estDansLeDico = motUser.verifierMot();
+				if (!memeTaille) {
+					cout << "Votre mot n'est pas de le même taille que le mot demande " << endl;
+				}
+				if (!estDansLeDico) {
+					cout << "Votre mot n'est pas dans le dictionnaire" << endl;
+				}
+			} while ((memeTaille == false) && (estDansLeDico == false));
+			if ((memeTaille) && (estDansLeDico)) {
+				motsArentrer.push_back(motUser);
+				listeMots.ajouterMot(motUser);
+			}
+			for (int i = 0; i < motsArentrer.size(); i++) {
+				affichageMot(motsArentrer[i], motAdeviner, i, font, largeurFenetre_, hauteurGrille_, app,txt);
+				affichageAlphabetActualise(motsArentrer[i], motAdeviner, app, alphabet, font, positionxAlphabet, positionyAlphabet);
+			}
+			juste = motUser.comparaison(motAdeviner);
+			nbEssais += 1;
+		}
+		if ((juste) && (nbEssais <=6)) {
+			if (!app.isOpen()) {
+				historique.inscrireHistorique(fluxComplet, motAdeviner, motsArentrer);
+				historique.save(flux, nbEssais, juste, motAdeviner);
+			}
+			affichageGrille = false;
+			ecranDeFin(app, juste, font,motAdeviner,fluxIn,300,300);
+		}
+		if ((!juste)&&(nbEssais>=6)) {
+			if (!app.isOpen()) {
+				historique.inscrireHistorique(fluxComplet, motAdeviner, motsArentrer);
+				historique.save(flux, nbEssais, juste, motAdeviner);
+			}
+			affichageGrille = false;
+			ecranDeFin(app, juste, font, motAdeviner,fluxIn,300,300);
+		}
+		app.display();
+	}
+}
+
+void Jeu::affichageHistorique(ifstream& ifs, float positionX, float positionY, Text& txt, RenderWindow& window, Font& font) {
+	int nbPartie = 0;
+	int nbPartiebis = 0;
+	string chaine;
+	float posX = positionX;
+	float posY = positionY;
+	while (!ifs.eof()) {
+		getline(ifs,chaine);
+		nbPartie += 1;
+	}
+	while (!ifs.eof()) {
+		getline(ifs, chaine);
+		nbPartiebis += 1;
+		if (nbPartie - nbPartiebis <= 3) {
+			txt.setString(chaine);
+			txt.setFont(font);
+			txt.setCharacterSize(10);
+			txt.setPosition(Vector2f(posX, posY));
+			window.draw(txt);
+			posX += positionX / 4;
+			posY += positionY / 4;
+		}
+	}
+}
+
+void Jeu::ecranDeFin(RenderWindow& window, bool gagne, Font& font, Mot& motAdeviner, ifstream& ifs, float positionX, float positionY) {
+	Text txtVictoire;
+	Text txtVictoirebis;
+	Text txtHisto;
+	txtVictoire.setFont(font);
+	txtVictoirebis.setFont(font);
+	txtVictoire.setCharacterSize(70);
+	txtVictoirebis.setCharacterSize(15);
+	txtVictoire.setPosition(Vector2f(100, 50));
+	txtVictoirebis.setPosition(Vector2f(200, 200));
+	if (gagne) {
+		txtVictoire.setString("VICTOIRE");
+		txtVictoirebis.setString("Vous avez trouve le mot");
+		window.draw(txtVictoire);
+		window.draw(txtVictoirebis);
+	}
+	else{
+		txtVictoire.setString("DOMMAGE");
+		txtVictoirebis.setString("Le mot a trouver etait " + motAdeviner.getMot());
+		window.draw(txtVictoire);
+		window.draw(txtVictoirebis);
+	}
+	affichageHistorique(ifs, positionX, positionY, txtHisto, window, font);
+}
+void Jeu::affichageGrille(Interfacegraphique& grille, RenderWindow& window,int largeurFenetre, int hauteurFenetre) {
+	grille.drawGrille(largeurFenetre, hauteurFenetre, window);
+}
+
+void Jeu::initialiser(RenderWindow& window,Font &font, Interfacegraphique& grille, Alphabet& alphabet, int largeurFenetre, int hauteurGrille, float positionXalphabet, float positionYalphabet) {
+	grille.drawGrille(largeurFenetre, hauteurGrille,window);
+	alphabet.drawAlphabet(positionXalphabet, positionYalphabet, window, font);
+}
+
+void Jeu::affichageAlphabetActualise(Mot &mot,Mot &motAdeviner, RenderWindow& window, Alphabet& alphabet, Font &font,float positionXalphabet, float positionYalphabet) {
+	alphabet.actualisationCouleur(motAdeviner, mot);
+	alphabet.drawAlphabet(positionXalphabet, positionYalphabet, window, font);
+}
+
+void Jeu::affichageMotVierge(Mot& mot,int tailleMotAuHasard, int positionLigne, Font& font, int largeurFenetre, int hauteurGrille, RenderWindow& window, Text& txt) {
+	vector<int> indicesCouleur;
+	for (int i = 0; i < mot.getTailleMot(); i++) {
+		indicesCouleur.push_back(0);
+	}
+	mot.drawMotVierge(window, positionLigne, tailleMotAuHasard,mot.getTailleMot(), font, largeurFenetre, hauteurGrille, indicesCouleur, txt);
+}
+
+void Jeu::affichageMot(Mot& mot,Mot &motAdeviner,int positionLigne,Font &font, int largeurFenetre, int hauteurGrille,RenderWindow &window,Text &txt) {
+	vector <int> indicesCouleur = mot.indicesColor(motAdeviner);
+	mot.drawMotComplet(window, positionLigne, mot.getTailleMot(), font, largeurFenetre, hauteurGrille, indicesCouleur,txt);
+}
+
+// Chargement de la police d'écriture 
+void Jeu::LoadFont(Font &font) {
+	if (!font.loadFromFile("PressStart2P-Regular.ttf")) {
+		// Si Erreur
+		cout << "Erreur lors du chargement" << endl;
+	}
+}
+
+/// Jeu.h///
+#pragma once
+#include <iostream>
+#include <SFML/Graphics.hpp>
+#include "historique.h"
+#include "Alphabet.h"
+#include "interfacegraphique.h"
+#include "grille.h"
+
+using namespace std;
+using namespace sf;
+// Classe crée par CRETIER Quentin
+
+class Jeu { // Classe qui permet de gérer l'interface graphique et les intéractions avec l'utilisateur
+
+public :
+	Jeu();
+	void play(); // Méthodes réunissant toutes les autres méthodes de la classe Jeu / Permet de jouer au jeu dans sa totalité
+	void initialiser(RenderWindow& window, Font& font, Interfacegraphique& grille, Alphabet& alphabet, int largeurFenetre, int hauteurGrille, float positionXalphabet, float positionYalphabet); // Affichage de la grille et de l'alphabet (1ère écran du joueur)
+	void affichageAlphabetActualise(Mot& mot, Mot& motAdeviner, RenderWindow& window, Alphabet& alphabet,Font &font, float positionXalphabet, float positionYalphabet);
+	void affichageMot(Mot& mot, Mot& motAdeviner, int positionLigne, Font& font, int largeurFenetre, int hauteurGrille, RenderWindow& window,Text &txt);
+	void affichageGrille(Interfacegraphique& grille, RenderWindow& window, int largeurFenetre, int hauteurFenetre);
+	void ecranDeFin(RenderWindow& window, bool gagne, Font& font, Mot& motAdeviner,ifstream &ifs, float positionX, float positionY);
+	void LoadFont(Font &font);
+	void affichageMotVierge(Mot& mot, int tailleMotAuHasard, int positionLigne, Font& font, int largeurFenetre, int hauteurGrille, RenderWindow& window, Text& txt);
+	// Rajouter des options comme nouvelle partie ou musique de victoire, de défaite
+	void affichageHistorique(ifstream& ifs, float positionX, float positionY, Text& txt, RenderWindow& window, Font& font);
+};
+
+/// Interfacegraphique.cpp ///
+#include "interfacegraphique.h"
+
+Interfacegraphique::Interfacegraphique() {
+}
+
+void Interfacegraphique::drawGrille(int largeurFenetre, int hauteurFenetre,RenderWindow &window ) {
+	vector<RectangleShape> lines_horizontales;
+	vector<RectangleShape> lines_verticales;
+
+	// Positionnement des lignes (on suppose ici que la fenêtre est adaptative)
+	float positionVerti = largeurFenetre / tailleGrille_;
+	float positionHorizontal = hauteurFenetre / 6;
+
+	// Lignes verticales
+	for (int i = 0; i < tailleGrille_-1; i++) {
+		lines_verticales.push_back(RectangleShape(Vector2f(6, hauteurFenetre)));
+	}
+	// Lignes horizontales
+	for (int i = 0; i < 6; i++) {
+		lines_horizontales.push_back(RectangleShape(Vector2f(largeurFenetre, 6)));
+	}
+	// Il faut 6 lignes horizontales et tailleGrille_ - 1 lignes verticales
+
+	for (int i = 0; i < tailleGrille_ - 1; i++) {
+		lines_verticales[i].setPosition((i + 1) * positionVerti - 3,0);
+	}
+	for (int i = 0; i < 6; i++) {
+		lines_horizontales[i].setPosition(0, (i + 1) * positionHorizontal - 3);
+	}
+
+	// Lignes de couleurs noires
+	for (size_t i = 0; i < lines_horizontales.size(); i++)
+		lines_horizontales[i].setFillColor(Color::White);
+	for (size_t i = 0; i < lines_verticales.size(); i++)
+		lines_verticales[i].setFillColor(Color::White);
+
+	// Affichage des lignes
+	for (size_t i = 0; i < lines_horizontales.size(); i++)
+		window.draw(lines_horizontales[i]);
+	for (size_t i = 0; i < lines_verticales.size(); i++)
+		window.draw(lines_verticales[i]);
+}
+
+/// interfaceGraphique.h ///
+#pragma once
+#include "touche.h"
+#include <vector>
+
+class Interfacegraphique {
+	int tailleGrille_;
+public :
+	Interfacegraphique();
+	void setTailleGrille(int i) { tailleGrille_ = i; };
+	void drawGrille(int largeurFenetre, int hauteurfenetre,RenderWindow &window);
+};
+
+/// Alphabet.cpp ///
+#include "Alphabet.h"
+
+Alphabet::Alphabet() {
+	alphabet_.push_back('a');
+	alphabet_.push_back('z');
+	alphabet_.push_back('e');
+	alphabet_.push_back('r');
+	alphabet_.push_back('t');
+	alphabet_.push_back('y');
+	alphabet_.push_back('u');
+	alphabet_.push_back('i');
+	alphabet_.push_back('o');
+	alphabet_.push_back('p');
+	alphabet_.push_back('q');
+	alphabet_.push_back('s');
+	alphabet_.push_back('d');
+	alphabet_.push_back('f');
+	alphabet_.push_back('g');
+	alphabet_.push_back('h');
+	alphabet_.push_back('j');
+	alphabet_.push_back('k');
+	alphabet_.push_back('l');
+	alphabet_.push_back('m');
+	alphabet_.push_back('w');
+	alphabet_.push_back('x');
+	alphabet_.push_back('c');
+	alphabet_.push_back('v');
+	alphabet_.push_back('b');
+	alphabet_.push_back('n');
+	for (int i = 0; i < 26; i++) {
+		carresLettre_.push_back(RectangleShape(Vector2f(50, 50)));
+		indicesCouleur_.push_back(0);
+	}
+}
+
+void setCarre(RectangleShape rect, RenderWindow& window, float positionX, float positionY, int indiceColor) {
+	rect.setFillColor(Color::Black);
+	rect.setOutlineThickness(5);
+	if (indiceColor == 0) {
+		rect.setOutlineColor(Color::White);
+	}
+	if (indiceColor == 1) {
+		rect.setOutlineColor(Color::Yellow);
+	}
+	if (indiceColor == 2) {
+		rect.setOutlineColor(Color::Red);
+	}
+	if (indiceColor == 3) {
+		rect.setOutlineColor(Color(127, 127, 127));
+	}
+	rect.setPosition(Vector2f(positionX, positionY));
+	window.draw(rect);
+}
+
+void Alphabet::drawCarre(RenderWindow& window, float posX, float posY, int indice,int indiceColor) {
+	setCarre(carresLettre_[indice], window, posX, posY, indiceColor);
+}
+
+void setTextAlphabet(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor) {
+	txt.setFont(font);
+	txt.setString(s);
+	txt.setCharacterSize(25);
+	// Convention : 0 = Blanc , 1 = Jaune , 2 = Rouge, 3 = Gris
+	if (indiceColor == 0) {
+		txt.setFillColor(Color::White);
+	}
+	if (indiceColor == 1) {
+		txt.setFillColor(Color::Yellow);
+	}
+	if (indiceColor == 2) {
+		txt.setFillColor(Color::Red);
+	}
+	if (indiceColor == 3) {
+		txt.setFillColor(Color(127,127,127));
+	}
+	txt.setPosition(Vector2f(positionX, positionY));
+	window.draw(txt);
+}
+
+
+void Alphabet::drawChar(RenderWindow& window, float posX, float posY, int indice, Font font, int indiceCouleur) {
+	string s;
+	s.push_back(alphabet_[indice]);
+	Text txt;
+	setTextAlphabet(txt, window, font, s, posX, posY, indiceCouleur);
+}
+
+void Alphabet::actualisationCouleur(Mot& motTire,Mot& motEcrit) {
+	for (int i = 0; i < motTire.getTailleMot(); i++) {
+		int compteur = 0;
+		for (int j = 0; j < motTire.getTailleMot(); j++) {
+			if (i == j) {
+				if (motEcrit[i] == motTire[j]) {
+					for (int k = 0; k < 26; k++) {
+						if (alphabet_[k] == motEcrit[i]) {
+							if (indicesCouleur_[k] == 0 || indicesCouleur_[k] == 1) {
+								indicesCouleur_[k] = 2;
+							}
+						}
+					}
+				}
+				else {
+					compteur += 1;
+				}
+			}
+			else {
+				if (motEcrit[i] == motTire[j]) {
+					for (int k = 0; k < 26; k++) {
+						if (alphabet_[k] == motTire[j]) {
+							if (indicesCouleur_[k] == 0) {
+								indicesCouleur_[k] = 1;
+							}
+						}
+					}
+				}
+				else {
+					compteur += 1;
+				}
+
+			}
+		}
+		if (compteur == motTire.getTailleMot()) {
+			for (int k = 0; k < 26; k++) {
+				if (alphabet_[k] == motEcrit[i]) {
+					if (indicesCouleur_[k] == 0) {
+						indicesCouleur_[k] = 3;
+					}
+				}
+			}
+		}
+	}
+}
+
+void Alphabet::drawAlphabet(float posX, float posY, RenderWindow& window,Font font) {
+	for (int i = 0; i < 26; i++) {
+		if (i < 10) {
+			drawCarre(window,posX +i*50,posY,i,indicesCouleur_[i]);
+			drawChar(window, posX + i*50 + 50/4, posY + 50/4, i,font, indicesCouleur_[i]);
+		}
+		if ((i >= 10) && (i < 20)) {
+			drawCarre(window, posX  + (i-10)*50, posY + 60, i, indicesCouleur_[i]);
+			drawChar(window, posX  + (i-10)*50 +50/4, posY + 60 + 50/4, i, font, indicesCouleur_[i]);
+		}
+		if((i>=20)&&(i<26)) {
+			drawCarre(window, posX  + (i-18)*50, posY + 120, i, indicesCouleur_[i]);
+			drawChar(window, posX  + (i-18)*50 + 50/4, posY + 120 + 50/4, i, font, indicesCouleur_[i]);
+		}
+	}
+}
+
+/// Alphabet.h ///
+#pragma once
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <vector>
+#include <SFML/Graphics.hpp>
+#include "mot.h"
+
+using namespace std;
+using namespace sf;
+
+class Alphabet {
+	vector<char> alphabet_;
+	vector<RectangleShape> carresLettre_;
+	vector<int> indicesCouleur_;
+public :
+	Alphabet();
+	void drawCarre(RenderWindow& window, float posX, float posY, int indice,int indiceColor);
+	void drawChar(RenderWindow& window, float posX, float posY, int indice, Font font, int indiceCouleur);
+	void actualisationCouleur(Mot& motTire,Mot& motEcrit);
+	void drawAlphabet(float posX, float posY, RenderWindow& window,Font font);
+	void drawAlphabetComparaison(float posX, float posY, RenderWindow& window, Mot& motTape);
+};
+
+void setTextAlphabet(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor);
+void setCarre(RectangleShape rect, RenderWindow& window, float positionX, float positionY, int indiceColor);
+
+/// historique.h ///
+#pragma once
+#include "grille.h"
+#include <fstream>
+#include <ctime>
+
+using namespace std;
+
+class Historique {
+public :
+	Historique();
+	void inscrireHistorique(ofstream& flux, Mot& motAtrouver, vector<Mot> listeMots);
+	void save(ofstream& flux, int essai, bool v, Mot& motADeviner);
+	// void afficherHistorique();
+};
+
+/// historique.cpp ///
+#include "historique.h"
+
+Historique::Historique() {
+}
+
+void Historique::save(ofstream& flux, int essai, bool v, Mot &motADeviner) {
+	flux << "Partie || Nombre d'essais : " << essai  << "/6";
+	if (v) {
+		flux << " || Victoire || Le mot a deviner etait : " << motADeviner.getMot() << endl;
+	}
+	else {
+		flux << " || Defaite || Le mot a deviner etait : " << motADeviner.getMot() << endl;
+	}
+}
+
+void Historique::inscrireHistorique(ofstream& flux, Mot& motAtrouver, vector<Mot> listeMots) {
+	for (int i = 0; i < (int)listeMots.size(); i++) {
+		flux << listeMots[i].getMot() << endl;
+	}
+	if (!motAtrouver.comparaison(listeMots[(int)listeMots.size()-1])) {
+		flux << "Mot à trouver : " << motAtrouver.getMot() << endl;
+	}
+	flux << "------------------" << endl;
+}
+
+/// Mot.cpp ///
+// Méthodes de la classe Mot
+
+#include "mot.h"
+
+Mot::Mot() {
+}
+
+void Mot::saisirMot() {
+	cout << "Quel est votre mot ? " << endl;
+	getline(cin, mot_);
+	taille_ = (int)mot_.size();
+}
+
+char& Mot::operator[](int i) {
+	if (i<0 || i>taille_) {
+		cerr << "Dépassement d'indice" << endl;
+		abort();
+	}
+	return mot_[i];
+}
+
+bool Mot::comparaison(Mot& motTire) {
+	if (taille_ != motTire.taille_) {
+		return false;
+	}
+	else {
+		for (int i = 0; i < taille_; i++) {
+			if (mot_[i] != motTire.mot_[i]) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+vector<int>& Mot::indicesComparaison(Mot& mot) { // Il faudra supposer que les 2 mots aient la même taille
+	vector<int> list;
+	for (int i = 0; i < taille_; i++) {
+		if (mot_[i] == mot.mot_[i]) {
+			list.push_back(i);
+		}
+	}
+	return list;
+}
+
+void Mot::motAuHasard() {
+	srand(time(NULL));
+	ifstream myFile;
+	myFile.open("liste_finale.txt");
+	int a = rand();
+	while (a > 32579) {
+		a = rand();
+	}
+	int i = 0;
+	if (myFile.is_open()) {
+		do {
+			getline(myFile, mot_);
+			// cout << mot_ << endl;	
+			i = i + 1;
+		} while ((i < a) || (mot_.size() < 5) || (mot_.size() > 9));
+	}
+	taille_ = (int)mot_.size();
+	myFile.close();
+}
+
+bool Mot::verifierMot() {
+	srand(time(NULL));
+	ifstream myFile;
+	myFile.open("liste_finale.txt");
+	string line;
+	while (!myFile.eof()) {
+		getline(myFile, line);
+		if (line == mot_) {
+			return true;
+		}
+	}
+	return false;
+}
+void Mot::saisirLettre(char& lettre) {
+	mot_.push_back(lettre);
+}
+
+void Mot::supprimerDerniereLettre(RenderWindow& window, Font font, int positionLigne, int tailleMotTire,int tailleMotActuel, int largeurFenetre, int hauteurFenetre) {
+	float posX = largeurFenetre / tailleMotTire;
+	float posY = hauteurFenetre / 6;
+	float positionY = positionLigne * posY + (posY / 4);
+	float positionX = tailleMotActuel * posX + (posX / 4);
+	char lettreSupprime = mot_[tailleMotActuel];
+	mot_.pop_back();
+	Text txt;
+	txt.setFont(font);
+	txt.setString(lettreSupprime);
+	txt.setCharacterSize(60);
+	txt.setPosition(Vector2f(positionX, positionY));
+	window.draw(txt);
+	
+}
+void Mot::drawMot(RenderWindow& window, Text &txt, Font font) {
+	txt.setFont(font);
+	txt.setString(mot_);
+	txt.setCharacterSize(26);
+	txt.setFillColor(Color::Black);
+	window.draw(txt);
+}
+
+void setText(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor) {
+	txt.setFont(font);
+	txt.setString(s);
+	txt.setCharacterSize(60);
+	if (indiceColor == 0) {
+		txt.setFillColor(Color::White);
+	}
+	if (indiceColor == 1) {
+		txt.setFillColor(Color::Yellow);
+	}
+	if (indiceColor == 2) {
+		txt.setFillColor(Color::Red);
+	}
+	txt.setPosition(Vector2f(positionX, positionY));
+	window.draw(txt);
+}
+
+vector<int> Mot::indicesColor(Mot &motTire) { // Les 2 mots doivent être de même taille
+	vector<int> indices;
+	for (int i = 0; i < taille_; i++) {
+		indices.push_back(0);
+	}
+	// Convention : 0 = Blanc , 1 = Jaune, 2 = Rouge
+	for (int i = 0; i < taille_; i++) {
+		for (int j = 0; j < motTire.taille_; j++) {
+			if (i == j) {
+				if (mot_[i] == motTire.mot_[j]) {
+					indices[i]=2;
+				}
+			}
+			else {
+				if (mot_[i] == motTire.mot_[j]) {
+					if (indices[i]==0){
+						indices[i]=1;
+					}
+					
+				}
+			}
+		}
+	}
+	return indices;
+}
+
+
+
+void Mot::drawLettre(int indice,RenderWindow& window, Font font, float positionX, float positionY, int indiceColor) {
+	string s;
+	s.push_back(mot_[indice]);
+	Text txt;
+	setText(txt, window, font, s, positionX, positionY,indiceColor);
+}
+
+void Mot::drawMotComplet(RenderWindow& window, int positionLigne, int tailleMotTire, Font font, int largeurFenetre, int hauteurFenetre, vector<int> indicesColor,Text &txt) {
+	float posX = largeurFenetre / tailleMotTire;
+	float posY = hauteurFenetre / 6;
+	float positionY = positionLigne * posY + (posY / 4);
+	float positionX = 0;
+	for (int i = 0; i < tailleMotTire; i++) {
+		positionX = i * posX + (posX / 4);
+		txt.setFont(font);
+		txt.setString(mot_[i]);
+		txt.setCharacterSize(60);
+		if (indicesColor[i] == 0) {
+			txt.setFillColor(Color::White);
+		}
+		if (indicesColor[i] == 1) {
+			txt.setFillColor(Color::Yellow);
+		}
+		if (indicesColor[i] == 2) {
+			txt.setFillColor(Color::Red);
+		}
+		txt.setPosition(Vector2f(positionX, positionY));
+		window.draw(txt);
+	}
+}
+
+void Mot::drawMotVierge(RenderWindow& window, int positionLigne, int tailleMotTire, int tailleMot, Font font, int largeurFenetre, int hauteurFenetre, vector<int> indicesColor, Text& txt) {
+	float posX = largeurFenetre / tailleMotTire;
+	float posY = hauteurFenetre / 6;
+	float positionY = positionLigne * posY + (posY / 4);
+	float positionX = 0;
+	for (int i = 0; i < tailleMot; i++) {
+		positionX = i * posX + (posX / 4);
+		txt.setFont(font);
+		txt.setString(mot_[i]);
+		txt.setCharacterSize(60);
+		if (indicesColor[i] == 0) {
+			txt.setFillColor(Color::White);
+		}
+		if (indicesColor[i] == 1) {
+			txt.setFillColor(Color::Yellow);
+		}
+		if (indicesColor[i] == 2) {
+			txt.setFillColor(Color::Red);
+		}
+		txt.setPosition(Vector2f(positionX, positionY));
+		window.draw(txt);
+	}
+}
+
+vector<int> Mot::initialisationIndicesCouleur() {
+	vector<int> indicesColor;
+	for (int i = 0; i < taille_; i++) {
+		indicesColor.push_back(0);
+	}
+	return indicesColor;
+}
+
+
+/*
+void Mot::drawMotGrille(RenderWindow& window, int positionLigne, int tailleMotTire, Font font, int largeurFenetre, int hauteurFenetre) {
+	float posX = largeurFenetre/tailleMotTire; 
+	float posY = hauteurFenetre/6;
+	float positionY = positionLigne*posY+(posY/4);
+	float positionX = 0;
+	for (int i = 0; i < tailleMotTire; i++) {
+		positionX = i*posX + (posX/4);
+		drawLettre(i, window, font, positionX, positionY);
+	}
+}
+*/
+void Mot::saisirMotClavier(const int tailleMotHasard, Event event) {
+	char lettre = ' ';
+	for (int i = 0; i < tailleMotHasard; i++) {
+		cout << "Saisir au clavier les lettres" << endl;
+		lettre = lettreClavier(event);
+		mot_ = mot_ + lettre;
+	}
+}
+
+void Mot::saisieMotClavier(Event event, Mot& motAuHasard) {
+	cout << "Taille du mot :" << motAuHasard.taille_ << endl;
+	cout << "Saisir le mot" << endl;
+	bool verif = false;
+	while(verif==false){
+		if (event.type == Event::TextEntered) {
+			if (96 < event.text.unicode < 127) {
+				char a;
+				a = static_cast<char>(event.text.unicode);
+				mot_ += a;
+				cout << mot_ << endl;
+			}
+			if (event.text.unicode == 128) {
+				mot_.pop_back();
+				cout << mot_ << endl;
+			}
+		}
+		if (event.key.code == Keyboard::Enter) {
+			verif = comparaison(motAuHasard);
+		}
+	}
+	/*
+	if (event.type == Event::KeyPressed) {
+		if (event.key.code == Keyboard::Enter) {
+				verif = comparaison(motAuHasard);
+			}
+		}
+
+	}
+	*/
+	cout << mot_ << endl;
+
+	/*
+	void afficherMot(Event & event, RenderWindow & window) {
+		if (event.type == Event::TextEntered) {
+			if (event.text.unicode < 128) {
+				cout << "ASCII character typed: " << static_cast<char>(event.text.unicode) << endl;
+			}
+		}
+	}
+	*/
+}
+
+void Mot::ajouterLettre(char& lettre) {
+	mot_.push_back(lettre);
+	taille_ = (int)mot_.size();
+}
+
+void Mot::retirerLettre() {
+	mot_.pop_back();
+}
+
+void Mot::MotAuClavier(Event event) {
+	if (event.type == Event::TextEntered) {
+		if (event.text.unicode < 123 && event.text.unicode>96) {
+			char lettre = static_cast<char>(event.text.unicode);
+			mot_ = mot_ + lettre;
+		}
+	}
+	if (event.type == Event::KeyPressed) {
+		if ((event.key.code == Keyboard::BackSpace) && (taille_ > 0)) {
+			mot_.pop_back();
+		}
+	}
+	cout << mot_ << endl;
+}
+
+char Mot::lettreClavier(Event event) {
+	if (event.type == Event::KeyPressed) {
+		switch (event.key.code) { // Code de la touche utilisée
+		case Keyboard::A:
+			return 'a';
+			break;
+		case Keyboard::Z:
+			return 'z';
+			break;
+		case Keyboard::E:
+			return 'e';
+			break;
+		case Keyboard::R:
+			return 'r';
+			break;
+		case Keyboard::T:
+			return 't';
+			break;
+		case Keyboard::Y:
+			return 'y';
+			break;
+		case Keyboard::U:
+			return 'u';
+			break;
+		case Keyboard::I:
+			return 'i';
+			break;
+		case Keyboard::O:
+			return 'o';
+			break;
+		case Keyboard::P:
+			return 'p';
+			break;
+		case Keyboard::Q:
+			return 'q';
+			break;
+		case Keyboard::S:
+			return 's';
+			break;
+		case Keyboard::D:
+			return 'd';
+			break;
+		case Keyboard::F:
+			return 'f';
+			break;
+		case Keyboard::G:
+			return 'g';
+			break;
+		case Keyboard::H:
+			return 'h';
+			break;
+		case Keyboard::J:
+			return 'j';
+			break;
+		case Keyboard::K:
+			return 'k';
+			break;
+		case Keyboard::L:
+			return 'l';
+			break;
+		case Keyboard::M:
+			return 'm';
+			break;
+		case Keyboard::W:
+			return 'w';
+			break;
+		case Keyboard::X:
+			return 'x';
+			break;
+		case Keyboard::C:
+			return 'c';
+			break;
+		case Keyboard::V:
+			return 'v';
+			break;
+		case Keyboard::B:
+			return 'b';
+			break;
+		case Keyboard::N:
+			return 'n';
+			break;
+		// Faire le cas du retour arrière
+		default:
+			break;
+		}
+
+	}
+}
+
+/// mot.h ///
+#pragma once
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <vector>
+#include <SFML/Graphics.hpp>
+
+using namespace std;
+using namespace sf;
+// Classe crée par CRETIER Quentin
+
+class Mot {
+	string mot_;
+	int taille_;
+public :
+	Mot();
+	void saisirMot();
+	char lettreClavier(Event event);
+	void saisirMotClavier(const int tailleMotHasard,Event event); // fait
+	void motAuHasard();
+	int getTailleMot() const { return taille_; };
+	string getMot() const { return mot_; };
+	char& operator[](int i); // fait
+	bool comparaison(Mot& motTire); // fait
+	vector<int>& indicesComparaison(Mot& mot); // fait
+	void drawMot(RenderWindow &window, Text &txt,Font font);
+	void drawLettre(int indice,RenderWindow& window, Font font, float positionX, float positionY, int indiceColor);
+	void drawMotGrille(RenderWindow& window, int positionLigne, int tailleMotTire, Font font, int largeurFenetre, int hauteurFenetre);
+	bool verifierMot(); // Vérifie si le mot est dans le fichier txt
+	vector<int> indicesColor(Mot &motTire);
+	void drawMotComplet(RenderWindow& window, int positionLigne, int tailleMotTire, Font font, int largeurFenetre, int hauteurFenetre, vector<int> indicesColor, Text &txt);
+	void saisieMotClavier(Event event, Mot& motAuHasard);
+	bool memeTaille(Mot& motAuHasard) const { return taille_ == motAuHasard.taille_; };
+	void saisirLettre(char& lettre);
+	void supprimerDerniereLettre(RenderWindow &window,Font font,int positionLigne,int tailleMot,int tailleMotActuel,int largeurFenetre,int hauteurFenetre);
+	vector<int> initialisationIndicesCouleur();
+	void drawMotVierge(RenderWindow& window, int positionLigne, int tailleMotTire, int tailleMot, Font font, int largeurFenetre, int hauteurFenetre, vector<int> indicesColor, Text& txt);
+	void clear() { mot_.clear(); };
+	void MotAuClavier(Event event);
+	void ajouterLettre(char& lettre);
+	void retirerLettre();
+};
+
+void setText(Text &txt,RenderWindow& window, Font font, string& s, float positionX, float positionY, int indice);
+///
