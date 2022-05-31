@@ -7,3 +7,694 @@ int main() {
 	game.play(); // On lance la partie
 	return 0;
 }
+
+#pragma once
+#include "historique.h"
+#include "Alphabet.h"
+#include "interfacegraphique.h"
+
+// La Classe Jeu permet de jouer au jeu (afficher toutes les données, saisir les mots ...)
+class Jeu { // Classe créée par CRETIER Quentin
+public :
+	Jeu();
+	void play(); // Méthode permettant de jouer au Motus
+	void initialiser(RenderWindow& window, Font& font, Interfacegraphique& grille, Alphabet& alphabet, int largeurFenetre, int hauteurGrille, float positionXalphabet, float positionYalphabet); // Initialisation 
+	void affichageAlphabetActualise(Mot& mot, Mot& motAdeviner, RenderWindow& window, Alphabet& alphabet,Font &font, float positionXalphabet, float positionYalphabet); // Méthode permettant l'actualsiation de l'alphabet et son affichage
+	void affichageMot(Mot& mot, Mot& motAdeviner, int positionLigne, Font& font, int largeurFenetre, int hauteurGrille, RenderWindow& window,Text &txt); // Méthode permettant d'afficher le mot 
+	void affichageGrille(Interfacegraphique& grille, RenderWindow& window, int largeurFenetre, int hauteurFenetre); // Méthode permettant d'afficher la grille sur l'écran
+	void ecranDeFin(RenderWindow& window, bool gagne, Font& font, Mot& motAdeviner, float positionX, float positionY); // Méthode affichant l'écran de fin
+	void LoadFont(Font &font); // Méthode chargeant la police d'écriture
+};
+
+#pragma once
+#include "grille.h"
+#include <fstream>
+#include <ctime>
+
+using namespace std;
+
+class Historique { // Classe créée par GERARD Noémie et CRETIER Quentin
+public :
+	Historique(); // Constructeur
+	void inscrireHistorique(ofstream& flux, Mot& motAtrouver, vector<Mot> listeMots); // On inscrit la partie dans un fichier "historiqueEntier.txt"
+	void save(ofstream& flux, int essai, bool v, Mot& motADeviner); // Méthode permettant d'inscrire le mot à trouver, le nombre de coups et si la personne a gagné ou perdu
+	vector<string> recupMotsHisto(ifstream& flux);
+	// void afficherHistorique();
+};
+
+#pragma once
+#include "mot.h"
+
+// Classe permettant de gérer l'affichage de l'alphabet pour savoir quelle lettre a été utilisée
+
+class Alphabet { // Classe créée par CRETIER Quentin
+	vector<char> alphabet_; // Variable listant toutes les lettres de l'alphabet
+	vector<RectangleShape> carresLettre_; // Variable enregistrant autant de carrées que de lettres présentes dans l'alphabet
+	vector<int> indicesCouleur_; // Variable preannt des indices pour aider le joueur avec différentes couleurs
+public :
+	Alphabet(); // Constructeur
+	void drawCarre(RenderWindow& window, float posX, float posY, int indice,int indiceColor); // Méthode affichant un carré d'une certaine couleur
+	void drawChar(RenderWindow& window, float posX, float posY, int indice, Font font, int indiceCouleur); // Méthode affichant une lettre d'une certaine couleur
+	void actualisationCouleur(Mot& motTire,Mot& motEcrit); // Méthode permettant d'actualiser les indices de couleur ppur aider le joueur
+	void drawAlphabet(float posX, float posY, RenderWindow& window,Font font); // Méthode permettant d'afficher l'alphabet
+};
+void setTextAlphabet(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor); // Fonction permettant de configurer les lettres à la bonne taille, à la bonne police d'écriture, à la bonne couleur
+
+#pragma once
+#include <SFML/Graphics.hpp>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+using namespace sf;
+
+// La classe Interfacegraphique permet de créer la grille pour le Motus
+class Interfacegraphique { // Classe créee par GERARD Noémie et CRETIER Quentin
+	int tailleGrille_; // taille de la longueur de la grille
+public :
+	Interfacegraphique(); // Constructeur
+	void setTailleGrille(int i) { tailleGrille_ = i; }; // Méthode en ligne permettant de définir la longueur de la grille
+	void drawGrille(int largeurFenetre, int hauteurfenetre,RenderWindow &window); // Méthode affichant la grille de jeu à l'écran
+};
+
+#pragma once
+#include "mot.h"
+
+class Grille { // Classe créée par CRETIER Quentin
+	vector<Mot*> grille_;
+public :
+	Grille(); // Constructeur
+	int getTaille() const { return grille_.size(); }; //Méthode donnant la taille de la partie à savoir le nombre de mots entrées
+	vector<Mot*> getGrille() const { return grille_; }; // Méthode retournant la liste des mots de la partie
+	void afficherGrille(); // affiche l'historique sur la console
+	vector<string> listeMots(); // Retourne la liste de mots de la partie
+	void ajouterMot(Mot& mot); // Méthode ajoutant un Mot à l'historique
+	// void implementerGrille(); // implémente l'historique dans un fichier texte
+};
+
+#include "Jeu.h"
+
+Jeu::Jeu() { // Constructeur
+}
+
+void Jeu::play() { // Méthode permettant de jouer au Motus
+	//  Variables utiles pour la suite de la fonction
+	Text txt; // Text pour afficher les éléments à l'écran
+	Font font; // Police d'écriture
+	ofstream flux; //ofstream pour enregistrer la solution de la partie
+	ofstream fluxComplet; // ofstream pour enregistrer la partie entière
+	ifstream fluxIn; // ifstream pour lire l'ensemble des solutions des parties précédentes
+	Alphabet alphabet;
+	Grille listeMots;
+	Historique historique; // Historique de la partie
+	Interfacegraphique grille; // Grille de jeu
+	Mot motAdeviner; // Mot que le joueur devra deviner
+	vector<Mot> motsArentrer; // vecteur de mots que le joueur va rentrer 
+	vector<string> motsHisto; // vecteur de mots pour afficher l'historique
+	int largeurFenetre_ = 800; // Largeur de l'écran
+	int hauteurFenetre_ = 800; // Hauteur de l'écran
+	int hauteurGrille_ = 600; // Hauteur de la grille de jeu
+	int nbEssais = 0; // Nombre d'essais
+	float positionxAlphabet = 150; // Abscisse pour l'affichage de l'alphabet
+	float positionyAlphabet = hauteurGrille_ + 10; // Ordonnée pour l'affichage de l'alphabet
+	bool juste = false; // Booléen permettant de savoir si la partie est gagnée ou non
+	bool affichageGrille = true; // Booléen pour savoir si la grille est affichée ou non
+	bool memeTaille = false; // Booléen pour savoir si le mot rentré par l'utilisateur est de même taille que le mot à chercher
+	bool estDansLeDico = false; // Booléen permettant de savoir si le mot entré par l'utilisateur est présent dans le dictionnaire ou non
+
+	flux.open("historiqueFinal.txt", ios::app); // On ouvre le fichier "historiqueFinal.txt" en mode ouverture
+	fluxIn.open("historiqueFinal.txt"); // On ouvre le fichier "historiqueFinal.txt" en mode ouverture
+	fluxComplet.open("historiqueEntier.txt", ios::app); // On ouvre le fichier "historiqueEntier.txt" en mode ouverture
+	LoadFont(font); // On charge la police d'écriture
+	motAdeviner.motAuHasard(); // On tire au hasard un mot dans le dictionnaire
+	grille.setTailleGrille(motAdeviner.getTailleMot()); // On définit la taille de la grille de jeu à la taille du mot recherché
+	motsHisto = historique.recupMotsHisto(fluxIn);
+	// Définition de la fenêtre pour l'affichage du jeu
+	RenderWindow app(VideoMode(largeurFenetre_, hauteurFenetre_, 32), "Motus by CRETIER Quentin & GERARD Noémie");
+
+	// Message pour afficher la taille de mot recherché car il y a un bug au démarrage, on ne voit pas complètement la grille de jeu
+	cout << "Le mot a chercher est de taille : " << motAdeviner.getTailleMot() << endl;
+
+	// Boucle infini / Elle se réalise tant que la fenêtre est ouverte
+	while (app.isOpen()) {
+		Event event; // event pour gérer les évènements (claviers / fermer l'application )
+		while (app.pollEvent(event)) {
+			if (event.type == Event::Closed) { // Si on clique sur la croix rouge
+				app.close(); // On ferme l'application
+			}
+			if ((event.type == Event::KeyPressed) && (event.key.code == Keyboard::Escape)) { // Si on appuie sur Echap
+				app.close();
+			}
+		}
+		app.clear(Color::Black); // On affiche un fond noir
+		if (affichageGrille) {
+			initialiser(app, font, grille, alphabet, largeurFenetre_, hauteurGrille_, positionxAlphabet, positionyAlphabet); // On initialise avec une grille et un alphabet vierge
+		}
+		if ((juste != true) && (nbEssais < 6)) { // Les conditions sont de savoir si le joueur à deviner le mot ou si le nombre d'essais est plus petit que 6
+			Mot motUser; // Définition du mot de l'utilisateur
+			do { // On boucle pour que le joueur rentre un mot valide à savoir qu'il soit présent dans le dictionnaire et de même taille que le mot demandé
+				motUser.saisirMot(); // On demande de saisir le mot
+				memeTaille = motUser.memeTaille(motAdeviner); // On vérifie la taille
+				estDansLeDico = motUser.verifierMot(); // On vérifie la présence dans le dictionnaire
+				if (!memeTaille) { // Message d'erreur
+					cout << "Votre mot n'est pas de le même taille que le mot demande " << endl;
+				}
+				if (!estDansLeDico) { // Message d'erreur
+					cout << "Votre mot n'est pas dans le dictionnaire" << endl;
+				}
+			} while ((memeTaille == false) && (estDansLeDico == false));
+			if ((memeTaille) && (estDansLeDico)) { // Si les conditions sont vraies, on rentre le mot dans la liste de mots de la partie
+				motsArentrer.push_back(motUser);
+				listeMots.ajouterMot(motUser);
+				nbEssais += 1; // On incrémente le nombre d'essais que le joueur a utilisé
+			}
+			for (int i = 0; i < motsArentrer.size(); i++) { // On affiche tous les mots de la partie et on actualise l'alphabet en conséquence
+				affichageMot(motsArentrer[i], motAdeviner, i, font, largeurFenetre_, hauteurGrille_, app,txt);
+				affichageAlphabetActualise(motsArentrer[i], motAdeviner, app, alphabet, font, positionxAlphabet, positionyAlphabet);
+			}
+			juste = motUser.comparaison(motAdeviner); // On vérifie si le mot est le même que celui demandé
+		}
+		if ((juste) && (nbEssais <=6)) { // Si le nombre d'essais que le joueur a mis est inférieur à 6 et si le joueur a trouvé le jeu
+			if (!app.isOpen()) { // On met le(s) mot(s) dans les différents historiques
+				historique.inscrireHistorique(fluxComplet, motAdeviner, motsArentrer);
+				historique.save(flux, nbEssais, juste, motAdeviner);
+			}
+			for (int i = 0; i < (int)motsHisto.size(); i++) { // Affichage de l'historique sur l'écran de fin
+				if ((int)motsHisto.size() - i < 6) {
+					txt.setString(motsHisto[i]);
+					txt.setFont(font);
+					txt.setCharacterSize(10);
+					txt.setFillColor(Color::Green);
+					txt.setPosition(Vector2f(0, 400 + i * 20));
+					app.draw(txt);
+				}
+			}
+			affichageGrille = false;
+			ecranDeFin(app, juste, font,motAdeviner,300,300); // On affiche l'écran de fin de victoire
+		}
+		if ((!juste)&&(nbEssais>=6)) { // Si le joueur a perdu la partie
+			if (!app.isOpen()) { // On implémente les différents mots dans l'historique
+				historique.inscrireHistorique(fluxComplet, motAdeviner, motsArentrer);
+				historique.save(flux, nbEssais, juste, motAdeviner);
+			}
+			for (int i = 0; i < (int)motsHisto.size(); i++) { // Affichage de l'historique sur l'écran de fin
+				if ((int)motsHisto.size() - i < 6) {
+					txt.setString(motsHisto[i]);
+					txt.setFont(font);
+					txt.setCharacterSize(10);
+					txt.setFillColor(Color::Red);
+					txt.setPosition(Vector2f(0, 400 + i * 20));
+					app.draw(txt);
+				}
+			}
+			affichageGrille = false;
+			ecranDeFin(app, juste, font, motAdeviner,300,300); // On affiche l'écran de fin de défaite
+		}
+		app.display(); // On affiche en permanence les données à l'écran
+	}
+}
+
+void Jeu::ecranDeFin(RenderWindow& window, bool gagne, Font& font, Mot& motAdeviner, float positionX, float positionY) {
+	// Affichage de l'écran de fin
+	// Définition des text
+	Text txtVictoire;
+	Text txtVictoirebis;
+	Text txtHisto;
+	// On définit les propriétés des différents textes
+	txtVictoire.setFont(font);
+	txtVictoirebis.setFont(font);
+	txtVictoire.setCharacterSize(70);
+	txtVictoirebis.setCharacterSize(15);
+	txtVictoire.setPosition(Vector2f(100, 50));
+	txtVictoirebis.setPosition(Vector2f(200, 200));
+	if (gagne) { // Si le joueur gagne, on affiche un texte de victoire
+		txtVictoire.setString("VICTOIRE");
+		txtVictoirebis.setString("Vous avez trouve le mot");
+		window.draw(txtVictoire);
+		window.draw(txtVictoirebis);
+	}
+	else{ // Si le joueur perd, on affiche un texte de défaite et le mot à trouver
+		txtVictoire.setString("DOMMAGE");
+		txtVictoirebis.setString("Le mot a trouver etait " + motAdeviner.getMot());
+		window.draw(txtVictoire);
+		window.draw(txtVictoirebis);
+	}
+}
+void Jeu::affichageGrille(Interfacegraphique& grille, RenderWindow& window,int largeurFenetre, int hauteurFenetre) {
+	// On affiche la grille de jeu
+	grille.drawGrille(largeurFenetre, hauteurFenetre, window);
+}
+
+void Jeu::initialiser(RenderWindow& window,Font &font, Interfacegraphique& grille, Alphabet& alphabet, int largeurFenetre, int hauteurGrille, float positionXalphabet, float positionYalphabet) {
+	// On initialise le terrain de jeu avec un grille et un alphabet vierge
+	grille.drawGrille(largeurFenetre, hauteurGrille,window);
+	alphabet.drawAlphabet(positionXalphabet, positionYalphabet, window, font);
+}
+
+void Jeu::affichageAlphabetActualise(Mot &mot,Mot &motAdeviner, RenderWindow& window, Alphabet& alphabet, Font &font,float positionXalphabet, float positionYalphabet) {
+	// On actualise l'alphabet pour donner des indications au joueur
+	alphabet.actualisationCouleur(motAdeviner, mot);
+	alphabet.drawAlphabet(positionXalphabet, positionYalphabet, window, font);
+}
+
+void Jeu::affichageMot(Mot& mot,Mot &motAdeviner,int positionLigne,Font &font, int largeurFenetre, int hauteurGrille,RenderWindow &window,Text &txt) {
+	// On affiche le mot avec les différentes couleurs pour aider le joueur
+	vector <int> indicesCouleur = mot.indicesColor(motAdeviner);
+	mot.drawMotComplet(window, positionLigne, mot.getTailleMot(), font, largeurFenetre, hauteurGrille, indicesCouleur,txt);
+}
+
+void Jeu::LoadFont(Font &font) { // Chargement de la police d'écriture
+	if (!font.loadFromFile("PressStart2P-Regular.ttf")) {
+		// Si Erreur
+		cout << "Erreur lors du chargement" << endl;
+	}
+}
+
+#include "Alphabet.h"
+
+Alphabet::Alphabet() { //Constructeur
+	// On ajoute chaque lettre de l'alphabet
+	alphabet_.push_back('a');
+	alphabet_.push_back('z');
+	alphabet_.push_back('e');
+	alphabet_.push_back('r');
+	alphabet_.push_back('t');
+	alphabet_.push_back('y');
+	alphabet_.push_back('u');
+	alphabet_.push_back('i');
+	alphabet_.push_back('o');
+	alphabet_.push_back('p');
+	alphabet_.push_back('q');
+	alphabet_.push_back('s');
+	alphabet_.push_back('d');
+	alphabet_.push_back('f');
+	alphabet_.push_back('g');
+	alphabet_.push_back('h');
+	alphabet_.push_back('j');
+	alphabet_.push_back('k');
+	alphabet_.push_back('l');
+	alphabet_.push_back('m');
+	alphabet_.push_back('w');
+	alphabet_.push_back('x');
+	alphabet_.push_back('c');
+	alphabet_.push_back('v');
+	alphabet_.push_back('b');
+	alphabet_.push_back('n');
+	for (int i = 0; i < 26; i++) { // On ajoute autant de rectangles qu'il y a de lettres dans l'alphabet et on initialise leur couleur en blanc (donc ici l'indice 0)
+		carresLettre_.push_back(RectangleShape(Vector2f(50, 50)));
+		indicesCouleur_.push_back(0);
+	}
+}
+
+void setCarre(RectangleShape rect, RenderWindow& window, float positionX, float positionY, int indiceColor) {
+	// On va définir un carré à fond noir avec un bord. Le bord va changer de couleur
+	rect.setFillColor(Color::Black);
+	rect.setOutlineThickness(5);
+	// Convention pour la couleur 
+	// Blanc = 0 / Jaune = 1 / Rouge = 2 / Gris = 3
+	if (indiceColor == 0) {
+		rect.setOutlineColor(Color::White);
+	}
+	if (indiceColor == 1) {
+		rect.setOutlineColor(Color::Yellow);
+	}
+	if (indiceColor == 2) {
+		rect.setOutlineColor(Color::Red);
+	}
+	if (indiceColor == 3) {
+		rect.setOutlineColor(Color(127, 127, 127));
+	}
+	rect.setPosition(Vector2f(positionX, positionY));
+	window.draw(rect);
+}
+
+void Alphabet::drawCarre(RenderWindow& window, float posX, float posY, int indice,int indiceColor) {
+	// On dessinne le carré à l'écran avec la couleur adéquate
+	setCarre(carresLettre_[indice], window, posX, posY, indiceColor);
+}
+
+void setTextAlphabet(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor) {
+	// On définit le texte aux bonnes conventions
+	txt.setFont(font);
+	txt.setString(s);
+	txt.setCharacterSize(25);
+	// Convention : 0 = Blanc , 1 = Jaune , 2 = Rouge, 3 = Gris
+	if (indiceColor == 0) {
+		txt.setFillColor(Color::White);
+	}
+	if (indiceColor == 1) {
+		txt.setFillColor(Color::Yellow);
+	}
+	if (indiceColor == 2) {
+		txt.setFillColor(Color::Red);
+	}
+	if (indiceColor == 3) {
+		txt.setFillColor(Color(127,127,127));
+	}
+	txt.setPosition(Vector2f(positionX, positionY));
+	window.draw(txt);
+}
+
+
+void Alphabet::drawChar(RenderWindow& window, float posX, float posY, int indice, Font font, int indiceCouleur) {
+	// On dessinne une lettre aux bonnes conventions
+	string s;
+	s.push_back(alphabet_[indice]);
+	Text txt;
+	setTextAlphabet(txt, window, font, s, posX, posY, indiceCouleur);
+}
+
+void Alphabet::actualisationCouleur(Mot& motTire,Mot& motEcrit) {
+	// Méthode permettant d'actualiser les couleurs de l'alphabet pour aider le joueur
+	for (int i = 0; i < motTire.getTailleMot(); i++) { // On parcourt tout le mot tiré au hasard
+		int compteur = 0;
+		for (int j = 0; j < motTire.getTailleMot(); j++) { // On parcourt tout le mot rentré par le joueur
+			if (i == j) { // Si on est au même indice
+				if (motEcrit[i] == motTire[j]) { // Si la lettre est la même
+					for (int k = 0; k < 26; k++) { // On parcourt l'alphabet
+						if (alphabet_[k] == motEcrit[i]) { // Si la lettre de l'alphabet est la même que celle du mot
+							if (indicesCouleur_[k] == 0 || indicesCouleur_[k] == 1) { // Si la lettre de l'alphabet est de base en blanc ou en jaune
+								indicesCouleur_[k] = 2; // On met la lettre en rouge
+							}
+						}
+					}
+				}
+				else {
+					compteur += 1;
+				}
+			}
+			else {
+				if (motEcrit[i] == motTire[j]) { // Si la lettre se trouve à un autre indice
+					for (int k = 0; k < 26; k++) { // On parcourt l'alphabet
+						if (alphabet_[k] == motTire[j]) { // Si la lettre d'alphabet est la bonne
+							if (indicesCouleur_[k] == 0) { // Si la lettre est de base en blanc
+								indicesCouleur_[k] = 1; // On met la lettre en jaune
+							}
+						}
+					}
+				}
+				else {
+					compteur += 1;
+				}
+
+			}
+		}
+		if (compteur == motTire.getTailleMot()) { // Si la lettre n'est pas présente
+			for (int k = 0; k < 26; k++) { // On parcourt l'alphabet
+				if (alphabet_[k] == motEcrit[i]) {
+					if (indicesCouleur_[k] == 0) { // Si la lettre est en blanc
+						indicesCouleur_[k] = 3; // On met la lettre en gris
+					}
+				}
+			}
+		}
+	}
+}
+
+void Alphabet::drawAlphabet(float posX, float posY, RenderWindow& window,Font font) {
+	// On va dessiner l'alphabet sur 3 lignes pour avoir un meilleur affichage et un meilleur visuel
+	for (int i = 0; i < 26; i++) { // On parcourt toutes les lettres de l'alphabet
+		if (i < 10) { // 1ère ligne
+			drawCarre(window,posX +i*50,posY,i,indicesCouleur_[i]);
+			drawChar(window, posX + i*50 + 50/4, posY + 50/4, i,font, indicesCouleur_[i]);
+		}
+		if ((i >= 10) && (i < 20)) { // 2ème ligne
+			drawCarre(window, posX  + (i-10)*50, posY + 60, i, indicesCouleur_[i]);
+			drawChar(window, posX  + (i-10)*50 +50/4, posY + 60 + 50/4, i, font, indicesCouleur_[i]);
+		}
+		if((i>=20)&&(i<26)) { // 3ème ligne
+			drawCarre(window, posX  + (i-18)*50, posY + 120, i, indicesCouleur_[i]);
+			drawChar(window, posX  + (i-18)*50 + 50/4, posY + 120 + 50/4, i, font, indicesCouleur_[i]);
+		}
+	}
+}
+
+#include "interfacegraphique.h"
+
+Interfacegraphique::Interfacegraphique() { // Constructeur
+}
+
+void Interfacegraphique::drawGrille(int largeurFenetre, int hauteurFenetre,RenderWindow &window ) {
+	// Méthode permettant de dessiner la grille de jeu à l'écran
+	vector<RectangleShape> lines_horizontales; // Vecteur de lignes horizontales
+	vector<RectangleShape> lines_verticales; // Vecteur de lignes verticales
+
+	// Positionnement des lignes
+	float positionVerti = largeurFenetre / tailleGrille_;
+	float positionHorizontal = hauteurFenetre / 6;
+
+	// Lignes verticales
+	for (int i = 0; i < tailleGrille_-1; i++) {
+		lines_verticales.push_back(RectangleShape(Vector2f(6, hauteurFenetre)));
+	}
+	// Lignes horizontales
+	for (int i = 0; i < 6; i++) {
+		lines_horizontales.push_back(RectangleShape(Vector2f(largeurFenetre, 6)));
+	}
+	// Il faut 6 lignes horizontales et tailleGrille_ - 1 lignes verticales
+
+	for (int i = 0; i < tailleGrille_ - 1; i++) {
+		lines_verticales[i].setPosition((i + 1) * positionVerti - 3,0);
+	}
+	for (int i = 0; i < 6; i++) {
+		lines_horizontales[i].setPosition(0, (i + 1) * positionHorizontal - 3);
+	}
+
+	// Lignes de couleurs noires
+	for (size_t i = 0; i < lines_horizontales.size(); i++)
+		lines_horizontales[i].setFillColor(Color::White);
+	for (size_t i = 0; i < lines_verticales.size(); i++)
+		lines_verticales[i].setFillColor(Color::White);
+
+	// Affichage des lignes
+	for (size_t i = 0; i < lines_horizontales.size(); i++)
+		window.draw(lines_horizontales[i]);
+	for (size_t i = 0; i < lines_verticales.size(); i++)
+		window.draw(lines_verticales[i]);
+}
+
+#include "historique.h"
+
+Historique::Historique() { // Constructeur
+}
+
+void Historique::save(ofstream& flux, int essai, bool v, Mot &motADeviner) { // On enregiste dans un fichier le dernier mot ou le mot à deviner
+	flux << "Nombre d'essais : " << essai  << "/6";
+	if (v) { // Si l'utilisateur gagne
+		flux << " || Victoire || Mot recherché : " << motADeviner.getMot() << endl;
+	}
+	else { // Si l'utilisateur perd
+		flux << " || Defaite || Mot recherché : " << motADeviner.getMot() << endl;
+	}
+}
+
+void Historique::inscrireHistorique(ofstream& flux, Mot& motAtrouver, vector<Mot> listeMots) { // On inscrit les mots de la partie dans un autre fichier
+	for (int i = 0; i < (int)listeMots.size(); i++) { // On boucle pour inscrire tous les mots
+		flux << listeMots[i].getMot() << endl;
+	}
+	if (!motAtrouver.comparaison(listeMots[(int)listeMots.size()-1])) { // On regarde si le joueur à trouver le mot ou non
+		flux << "Mot à trouver : " << motAtrouver.getMot() << endl;
+	}
+	flux << "------------------" << endl; // On ajoute une ligne pour séparer les parties
+}
+
+vector<string> Historique::recupMotsHisto(ifstream& flux) {
+	vector<string> listeMots;
+	string motArecup;
+	while (!flux.eof()) {
+		getline(flux, motArecup);
+		listeMots.push_back(motArecup);
+	}
+	return listeMots;
+}
+
+#include "mot.h"
+
+Mot::Mot() { // Constructeur
+}
+
+void Mot::saisirMot() {
+	// On saisit un mot
+	cout << "Quel est votre mot ? " << endl;
+	getline(cin, mot_); // On enregistre le mot
+	taille_ = (int)mot_.size(); // On actualise la taille du mot
+}
+
+char& Mot::operator[](int i) {
+	if (i<0 || i>taille_) { // Si l'indice pris est supérieur à la taille du mot ou inférieur à 0, on ne le prend pas en compte
+		cerr << "Dépassement d'indice" << endl;
+		abort();
+	}
+	return mot_[i]; // On retourne la lettre à l'indice i
+}
+
+bool Mot::comparaison(Mot& motTire) {
+	if (taille_ != motTire.taille_) { // Si le mot n'est pas de même taille, on rend directement false
+		return false;
+	}
+	else {
+		for (int i = 0; i < taille_; i++) { // Sinon on teste lettre par lettre pour voir si c'est le même mot
+			if (mot_[i] != motTire.mot_[i]) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+vector<int>& Mot::indicesComparaison(Mot& mot) { // Permet de savoir si les lettres sont au bonne endroit
+	vector<int> list;
+	for (int i = 0; i < taille_; i++) {
+		if (mot_[i] == mot.mot_[i]) {
+			list.push_back(i);
+		}
+	}
+	return list;
+}
+
+void Mot::motAuHasard() {
+	srand(time(NULL));
+	ifstream myFile;
+	myFile.open("liste_finale.txt"); // on ouvre le fichier "liste_finale.txt" en mode lecture
+	int a = rand();
+	while (a > 32579) { // On choisit un nombre random inférieur à
+		a = rand();
+	}
+	int i = 0;
+	if (myFile.is_open()) { // Si le fichier est ouvert 
+		do {
+			getline(myFile, mot_);
+			// cout << mot_ << endl;	
+			i = i + 1;
+		} while ((i < a)||(mot_.size() < 5)||(mot_.size() > 9)); // On récupère les mots un par un jusqu'à ce que les conditions soient réunies
+	}
+	taille_ = (int)mot_.size();
+	myFile.close(); // On ferme le fichier ouvert
+}
+
+bool Mot::verifierMot() {
+	srand(time(NULL));
+	ifstream myFile;
+	myFile.open("liste_finale.txt"); // On ouvre le fichier "liste_finale.txt"
+	string line;
+	while (!myFile.eof()) { // On fait une boucle qui va tester les mots du dictionnaire un par un pour voir si le mot écrit est présent
+		getline(myFile, line);
+		if (line == mot_) { // Si le mot est présent, on retourne true
+			return true;
+		}
+	}
+	return false; // Sinon on retourne false
+}
+
+void Mot::drawMot(RenderWindow& window, Text &txt, Font font) { // Peut être effacer cette fonction
+	txt.setFont(font);
+	txt.setString(mot_);
+	txt.setCharacterSize(26);
+	txt.setFillColor(Color::Black);
+	window.draw(txt);
+}
+
+void setText(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor) {
+	txt.setFont(font);
+	txt.setString(s);
+	txt.setCharacterSize(60);
+	// Conventions pour les couleurs
+	// 0 = Blanc ; 1 = Jaune ; 2 = Rouge
+	if (indiceColor == 0) { 
+		txt.setFillColor(Color::White);
+	}
+	if (indiceColor == 1) {
+		txt.setFillColor(Color::Yellow);
+	}
+	if (indiceColor == 2) {
+		txt.setFillColor(Color::Red);
+	}
+	txt.setPosition(Vector2f(positionX, positionY));
+	window.draw(txt);
+}
+
+vector<int> Mot::indicesColor(Mot &motTire) { // Peremt d'avoir les indices de couleurs pour chaque lettre du mot
+	vector<int> indices;
+	for (int i = 0; i < taille_; i++) {
+		indices.push_back(0); // On initialise tous les indices en blanc
+	}
+	// Convention : 0 = Blanc , 1 = Jaune, 2 = Rouge
+	for (int i = 0; i < taille_; i++) {
+		for (int j = 0; j < motTire.taille_; j++) {
+			if (i == j) { // Si on se trouve au même endrout
+				if (mot_[i] == motTire.mot_[j]) { // Si on a la même lettre
+					indices[i]=2; // On place l'indice pour le rouge
+				}
+			}
+			else {
+				if (mot_[i] == motTire.mot_[j]) { // Si la lettre si trouve à un autre endroit
+					if (indices[i]==0){ // Si l'indice de la lettre est blanc
+						indices[i]=1; // On le remplacera en jaune
+					}
+					
+				}
+			}
+		}
+	}
+	return indices;
+}
+
+
+
+void Mot::drawLettre(int indice,RenderWindow& window, Font font, float positionX, float positionY, int indiceColor) {
+	// On affiche la lettre avec la couleur, la taille et à la bonne position
+	string s;
+	s.push_back(mot_[indice]);
+	Text txt;
+	setText(txt, window, font, s, positionX, positionY,indiceColor);
+}
+
+void Mot::drawMotComplet(RenderWindow& window, int positionLigne, int tailleMotTire, Font font, int largeurFenetre, int hauteurFenetre, vector<int> indicesColor,Text &txt) {
+	// Affiche le mot avec chaque lettre au bonne endrout, à la bonne couleur et à la bonne taille
+	float posX = largeurFenetre / tailleMotTire;
+	float posY = hauteurFenetre / 6;
+	float positionY = positionLigne * posY + (posY / 4);
+	float positionX = 0;
+	for (int i = 0; i < tailleMotTire; i++) {
+		positionX = i * posX + (posX / 4);
+		txt.setFont(font);
+		txt.setString(mot_[i]);
+		txt.setCharacterSize(60);
+		// On a les mêmes conventions : 0 = Blanc / 1 = Jaune / 2 = Rouge
+		if (indicesColor[i] == 0) {
+			txt.setFillColor(Color::White);
+		}
+		if (indicesColor[i] == 1) {
+			txt.setFillColor(Color::Yellow);
+		}
+		if (indicesColor[i] == 2) {
+			txt.setFillColor(Color::Red);
+		}
+		txt.setPosition(Vector2f(positionX, positionY));
+		window.draw(txt);
+	}
+}
+
+#include "grille.h"
+
+Grille::Grille() { // Constructeur
+}
+
+void Grille::afficherGrille() { // On affiche les mots de la partie et leur taille sur le shell
+	for (int i = 0; i < getTaille(); i++) {
+		cout << grille_[i]->getMot() << endl;
+		cout << grille_[i]->getTailleMot() << endl;
+	}
+}
+
+void Grille::ajouterMot(Mot& mot) { // Méthode ajoutant un mot à la liste des mots de la partie
+	grille_.push_back(&mot);
+}
+
+vector<string> Grille::listeMots() { // Permet d'accéder à la liste de mots de la partie et de retourner cette liste de mots
+	vector<string> liste;
+	for (int i = 0; i < getTaille(); i++) {
+		liste.push_back(grille_[i]->getMot());
+	}
+	return liste;
+}
