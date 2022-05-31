@@ -1,0 +1,9 @@
+/// main.cpp ///
+// Fichier main.cpp
+#include "Jeu.h"
+
+int main() {
+	Jeu game;
+	game.play(); // On lance la partie
+	return 0;
+}
