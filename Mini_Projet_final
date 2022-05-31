@@ -8,7 +8,8 @@ int main() {
 	return 0;
 }
 
-#pragma once
+/// Jeu.h ///
+
 #include "historique.h"
 #include "Alphabet.h"
 #include "interfacegraphique.h"
@@ -26,71 +27,7 @@ public :
 	void LoadFont(Font &font); // Méthode chargeant la police d'écriture
 };
 
-#pragma once
-#include "grille.h"
-#include <fstream>
-#include <ctime>
-
-using namespace std;
-
-class Historique { // Classe créée par GERARD Noémie et CRETIER Quentin
-public :
-	Historique(); // Constructeur
-	void inscrireHistorique(ofstream& flux, Mot& motAtrouver, vector<Mot> listeMots); // On inscrit la partie dans un fichier "historiqueEntier.txt"
-	void save(ofstream& flux, int essai, bool v, Mot& motADeviner); // Méthode permettant d'inscrire le mot à trouver, le nombre de coups et si la personne a gagné ou perdu
-	vector<string> recupMotsHisto(ifstream& flux);
-	// void afficherHistorique();
-};
-
-#pragma once
-#include "mot.h"
-
-// Classe permettant de gérer l'affichage de l'alphabet pour savoir quelle lettre a été utilisée
-
-class Alphabet { // Classe créée par CRETIER Quentin
-	vector<char> alphabet_; // Variable listant toutes les lettres de l'alphabet
-	vector<RectangleShape> carresLettre_; // Variable enregistrant autant de carrées que de lettres présentes dans l'alphabet
-	vector<int> indicesCouleur_; // Variable preannt des indices pour aider le joueur avec différentes couleurs
-public :
-	Alphabet(); // Constructeur
-	void drawCarre(RenderWindow& window, float posX, float posY, int indice,int indiceColor); // Méthode affichant un carré d'une certaine couleur
-	void drawChar(RenderWindow& window, float posX, float posY, int indice, Font font, int indiceCouleur); // Méthode affichant une lettre d'une certaine couleur
-	void actualisationCouleur(Mot& motTire,Mot& motEcrit); // Méthode permettant d'actualiser les indices de couleur ppur aider le joueur
-	void drawAlphabet(float posX, float posY, RenderWindow& window,Font font); // Méthode permettant d'afficher l'alphabet
-};
-void setTextAlphabet(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor); // Fonction permettant de configurer les lettres à la bonne taille, à la bonne police d'écriture, à la bonne couleur
-
-#pragma once
-#include <SFML/Graphics.hpp>
-#include <iostream>
-#include <vector>
-
-using namespace std;
-using namespace sf;
-
-// La classe Interfacegraphique permet de créer la grille pour le Motus
-class Interfacegraphique { // Classe créee par GERARD Noémie et CRETIER Quentin
-	int tailleGrille_; // taille de la longueur de la grille
-public :
-	Interfacegraphique(); // Constructeur
-	void setTailleGrille(int i) { tailleGrille_ = i; }; // Méthode en ligne permettant de définir la longueur de la grille
-	void drawGrille(int largeurFenetre, int hauteurfenetre,RenderWindow &window); // Méthode affichant la grille de jeu à l'écran
-};
-
-#pragma once
-#include "mot.h"
-
-class Grille { // Classe créée par CRETIER Quentin
-	vector<Mot*> grille_;
-public :
-	Grille(); // Constructeur
-	int getTaille() const { return grille_.size(); }; //Méthode donnant la taille de la partie à savoir le nombre de mots entrées
-	vector<Mot*> getGrille() const { return grille_; }; // Méthode retournant la liste des mots de la partie
-	void afficherGrille(); // affiche l'historique sur la console
-	vector<string> listeMots(); // Retourne la liste de mots de la partie
-	void ajouterMot(Mot& mot); // Méthode ajoutant un Mot à l'historique
-	// void implementerGrille(); // implémente l'historique dans un fichier texte
-};
+/// Jeu.cpp ///
 
 #include "Jeu.h"
 
@@ -105,7 +42,6 @@ void Jeu::play() { // Méthode permettant de jouer au Motus
 	ofstream fluxComplet; // ofstream pour enregistrer la partie entière
 	ifstream fluxIn; // ifstream pour lire l'ensemble des solutions des parties précédentes
 	Alphabet alphabet;
-	Grille listeMots;
 	Historique historique; // Historique de la partie
 	Interfacegraphique grille; // Grille de jeu
 	Mot motAdeviner; // Mot que le joueur devra deviner
@@ -131,6 +67,10 @@ void Jeu::play() { // Méthode permettant de jouer au Motus
 	motsHisto = historique.recupMotsHisto(fluxIn);
 	// Définition de la fenêtre pour l'affichage du jeu
 	RenderWindow app(VideoMode(largeurFenetre_, hauteurFenetre_, 32), "Motus by CRETIER Quentin & GERARD Noémie");
+
+	cout << "Bienvenue sur le jeu MOTUS developpe par CRETIER Quentin et GERARD Noemie " << endl;
+	cout << "But du jeu : trouver le mot manquant en 6 essais maximum" << endl;
+	cout << "Amusez-vous bien\n" << endl;
 
 	// Message pour afficher la taille de mot recherché car il y a un bug au démarrage, on ne voit pas complètement la grille de jeu
 	cout << "Le mot a chercher est de taille : " << motAdeviner.getTailleMot() << endl;
@@ -165,7 +105,6 @@ void Jeu::play() { // Méthode permettant de jouer au Motus
 			} while ((memeTaille == false) && (estDansLeDico == false));
 			if ((memeTaille) && (estDansLeDico)) { // Si les conditions sont vraies, on rentre le mot dans la liste de mots de la partie
 				motsArentrer.push_back(motUser);
-				listeMots.ajouterMot(motUser);
 				nbEssais += 1; // On incrémente le nombre d'essais que le joueur a utilisé
 			}
 			for (int i = 0; i < motsArentrer.size(); i++) { // On affiche tous les mots de la partie et on actualise l'alphabet en conséquence
@@ -269,6 +208,93 @@ void Jeu::LoadFont(Font &font) { // Chargement de la police d'écriture
 		cout << "Erreur lors du chargement" << endl;
 	}
 }
+
+/// Interfacegraphique.h ///
+
+#pragma once
+#include <SFML/Graphics.hpp>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+using namespace sf;
+
+// La classe Interfacegraphique permet de créer la grille pour le Motus
+class Interfacegraphique { // Classe créee par GERARD Noémie et CRETIER Quentin
+	int tailleGrille_; // taille de la longueur de la grille
+public :
+	Interfacegraphique(); // Constructeur
+	void setTailleGrille(int i) { tailleGrille_ = i; }; // Méthode en ligne permettant de définir la longueur de la grille
+	void drawGrille(int largeurFenetre, int hauteurfenetre,RenderWindow &window); // Méthode affichant la grille de jeu à l'écran
+};
+
+/// Interfacegraphique.cpp ///
+
+#include "interfacegraphique.h"
+
+Interfacegraphique::Interfacegraphique() { // Constructeur
+}
+
+void Interfacegraphique::drawGrille(int largeurFenetre, int hauteurFenetre,RenderWindow &window ) {
+	// Méthode permettant de dessiner la grille de jeu à l'écran
+	vector<RectangleShape> lines_horizontales; // Vecteur de lignes horizontales
+	vector<RectangleShape> lines_verticales; // Vecteur de lignes verticales
+
+	// Positionnement des lignes
+	float positionVerti = largeurFenetre / tailleGrille_;
+	float positionHorizontal = hauteurFenetre / 6;
+
+	// Lignes verticales
+	for (int i = 0; i < tailleGrille_-1; i++) {
+		lines_verticales.push_back(RectangleShape(Vector2f(6, hauteurFenetre)));
+	}
+	// Lignes horizontales
+	for (int i = 0; i < 6; i++) {
+		lines_horizontales.push_back(RectangleShape(Vector2f(largeurFenetre, 6)));
+	}
+	// Il faut 6 lignes horizontales et tailleGrille_ - 1 lignes verticales
+
+	for (int i = 0; i < tailleGrille_ - 1; i++) {
+		lines_verticales[i].setPosition((i + 1) * positionVerti - 3,0);
+	}
+	for (int i = 0; i < 6; i++) {
+		lines_horizontales[i].setPosition(0, (i + 1) * positionHorizontal - 3);
+	}
+
+	// Lignes de couleurs noires
+	for (size_t i = 0; i < lines_horizontales.size(); i++)
+		lines_horizontales[i].setFillColor(Color::White);
+	for (size_t i = 0; i < lines_verticales.size(); i++)
+		lines_verticales[i].setFillColor(Color::White);
+
+	// Affichage des lignes
+	for (size_t i = 0; i < lines_horizontales.size(); i++)
+		window.draw(lines_horizontales[i]);
+	for (size_t i = 0; i < lines_verticales.size(); i++)
+		window.draw(lines_verticales[i]);
+}
+
+/// Alphabet.h ///
+
+#pragma once
+#include "mot.h"
+
+// Classe permettant de gérer l'affichage de l'alphabet pour savoir quelle lettre a été utilisée
+
+class Alphabet { // Classe créée par CRETIER Quentin
+	vector<char> alphabet_; // Variable listant toutes les lettres de l'alphabet
+	vector<RectangleShape> carresLettre_; // Variable enregistrant autant de carrées que de lettres présentes dans l'alphabet
+	vector<int> indicesCouleur_; // Variable preannt des indices pour aider le joueur avec différentes couleurs
+public :
+	Alphabet(); // Constructeur
+	void drawCarre(RenderWindow& window, float posX, float posY, int indice,int indiceColor); // Méthode affichant un carré d'une certaine couleur
+	void drawChar(RenderWindow& window, float posX, float posY, int indice, Font font, int indiceCouleur); // Méthode affichant une lettre d'une certaine couleur
+	void actualisationCouleur(Mot& motTire,Mot& motEcrit); // Méthode permettant d'actualiser les indices de couleur ppur aider le joueur
+	void drawAlphabet(float posX, float posY, RenderWindow& window,Font font); // Méthode permettant d'afficher l'alphabet
+};
+void setTextAlphabet(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor); // Fonction permettant de configurer les lettres à la bonne taille, à la bonne police d'écriture, à la bonne couleur
+
+/// Alphabet.cpp ///
 
 #include "Alphabet.h"
 
@@ -429,49 +455,24 @@ void Alphabet::drawAlphabet(float posX, float posY, RenderWindow& window,Font fo
 	}
 }
 
-#include "interfacegraphique.h"
+/// historique.h ///
 
-Interfacegraphique::Interfacegraphique() { // Constructeur
-}
+#pragma once
+#include "mot.h"
+#include <fstream>
+#include <ctime>
 
-void Interfacegraphique::drawGrille(int largeurFenetre, int hauteurFenetre,RenderWindow &window ) {
-	// Méthode permettant de dessiner la grille de jeu à l'écran
-	vector<RectangleShape> lines_horizontales; // Vecteur de lignes horizontales
-	vector<RectangleShape> lines_verticales; // Vecteur de lignes verticales
+using namespace std;
 
-	// Positionnement des lignes
-	float positionVerti = largeurFenetre / tailleGrille_;
-	float positionHorizontal = hauteurFenetre / 6;
+class Historique { // Classe créée par GERARD Noémie
+public :
+	Historique(); // Constructeur
+	void inscrireHistorique(ofstream& flux, Mot& motAtrouver, vector<Mot> listeMots); // On inscrit la partie dans un fichier "historiqueEntier.txt"
+	void save(ofstream& flux, int essai, bool v, Mot& motADeviner); // Méthode permettant d'inscrire le mot à trouver, le nombre de coups et si la personne a gagné ou perdu
+	vector<string> recupMotsHisto(ifstream& flux);
+};
 
-	// Lignes verticales
-	for (int i = 0; i < tailleGrille_-1; i++) {
-		lines_verticales.push_back(RectangleShape(Vector2f(6, hauteurFenetre)));
-	}
-	// Lignes horizontales
-	for (int i = 0; i < 6; i++) {
-		lines_horizontales.push_back(RectangleShape(Vector2f(largeurFenetre, 6)));
-	}
-	// Il faut 6 lignes horizontales et tailleGrille_ - 1 lignes verticales
-
-	for (int i = 0; i < tailleGrille_ - 1; i++) {
-		lines_verticales[i].setPosition((i + 1) * positionVerti - 3,0);
-	}
-	for (int i = 0; i < 6; i++) {
-		lines_horizontales[i].setPosition(0, (i + 1) * positionHorizontal - 3);
-	}
-
-	// Lignes de couleurs noires
-	for (size_t i = 0; i < lines_horizontales.size(); i++)
-		lines_horizontales[i].setFillColor(Color::White);
-	for (size_t i = 0; i < lines_verticales.size(); i++)
-		lines_verticales[i].setFillColor(Color::White);
-
-	// Affichage des lignes
-	for (size_t i = 0; i < lines_horizontales.size(); i++)
-		window.draw(lines_horizontales[i]);
-	for (size_t i = 0; i < lines_verticales.size(); i++)
-		window.draw(lines_verticales[i]);
-}
+/// historique.cpp ///
 
 #include "historique.h"
 
@@ -507,6 +508,41 @@ vector<string> Historique::recupMotsHisto(ifstream& flux) {
 	}
 	return listeMots;
 }
+
+/// mot.h ///
+
+#include <fstream>
+#include <cstdlib>
+#include <vector>
+#include <SFML/Graphics.hpp>
+
+using namespace std;
+using namespace sf;
+
+// La classe Mot permet de gérer tout ce qui est relatif au Mot
+class Mot { // Classe créée par CRETIER Quentin et GERARD Noémie
+	string mot_; // Un string pour eregistrer le mot tapé / tiré au hasard
+	int taille_; // Taille du mot
+public :
+	Mot(); // Constructeur
+	void saisirMot(); // Méthode pour saisir un mot avec le shell et le clavier
+	void motAuHasard(); // Méthode pour tirer
+	int getTailleMot() const { return taille_; }; // Méthode en ligne donnant la taille du mot
+	string getMot() const { return mot_; }; // Méthode en ligne donnant le mot
+	char& operator[](int i); // Permet d'accéder à la composante n°i du mot
+	bool comparaison(Mot& motTire); // Permet de savoir si le mot tiré au hasard est le même que celui qui est écrit
+	vector<int>& indicesComparaison(Mot& mot); // Permet de savoir quelle lettre est au bonne endroit ou si elle est présente dans le mot
+	void drawLettre(int indice,RenderWindow& window, Font font, float positionX, float positionY, int indiceColor); // Permet d'afficher la lettre avec la bonne couleur
+	bool verifierMot(); // Vérifie si le mot est dans le dictionnaire (liste_finale.txt)
+	vector<int> indicesColor(Mot &motTire); // Permet de donner les couleurs des lettres pour aider le joueur
+	void drawMotComplet(RenderWindow& window, int positionLigne, int tailleMotTire, Font font, int largeurFenetre, int hauteurFenetre, vector<int> indicesColor, Text &txt);
+	// Permet d'afficher le mot avec les couleurs pour aider le joueur
+	bool memeTaille(Mot& motAuHasard) const { return taille_ == motAuHasard.taille_; }; // Retourne un booléen pour savoir si le mot entré est de même taille que le mot tiré au hasard
+};
+
+void setText(Text &txt,RenderWindow& window, Font font, string& s, float positionX, float positionY, int indice); // Permet de configurer le texte à la bonne police d'écriture, à la bonne taille
+
+/// mot.cpp ///
 
 #include "mot.h"
 
@@ -584,14 +620,6 @@ bool Mot::verifierMot() {
 		}
 	}
 	return false; // Sinon on retourne false
-}
-
-void Mot::drawMot(RenderWindow& window, Text &txt, Font font) { // Peut être effacer cette fonction
-	txt.setFont(font);
-	txt.setString(mot_);
-	txt.setCharacterSize(26);
-	txt.setFillColor(Color::Black);
-	window.draw(txt);
 }
 
 void setText(Text& txt, RenderWindow& window, Font font, string& s, float positionX, float positionY, int indiceColor) {
@@ -675,26 +703,4 @@ void Mot::drawMotComplet(RenderWindow& window, int positionLigne, int tailleMotT
 	}
 }
 
-#include "grille.h"
-
-Grille::Grille() { // Constructeur
-}
-
-void Grille::afficherGrille() { // On affiche les mots de la partie et leur taille sur le shell
-	for (int i = 0; i < getTaille(); i++) {
-		cout << grille_[i]->getMot() << endl;
-		cout << grille_[i]->getTailleMot() << endl;
-	}
-}
-
-void Grille::ajouterMot(Mot& mot) { // Méthode ajoutant un mot à la liste des mots de la partie
-	grille_.push_back(&mot);
-}
-
-vector<string> Grille::listeMots() { // Permet d'accéder à la liste de mots de la partie et de retourner cette liste de mots
-	vector<string> liste;
-	for (int i = 0; i < getTaille(); i++) {
-		liste.push_back(grille_[i]->getMot());
-	}
-	return liste;
-}
+/// FIN ///
